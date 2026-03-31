@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { BookingProvider } from './context/BookingContext';
+import { TicketProvider } from './context/TicketContext';
+import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Public pages
@@ -17,6 +19,9 @@ import AdminTicketsPage from './pages/AdminTicketsPage';
 import UserDashboard from './pages/UserDashboard';
 import ProfessionalDashboard from './pages/ProfessionalDashboard';
 import SupportDashboard from './pages/SupportDashboard';
+import SupportTickets from './pages/SupportTickets';
+import SupportRespond from './pages/SupportRespond';
+import MyTicketsPage from './pages/MyTicketsPage';
 import ChatPage from './pages/ChatPage';
 
 function App() {
@@ -24,73 +29,103 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <BookingProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/services" element={<ServicesPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/support" element={<CustomerSupportPage />} />
+          <TicketProvider>
+            <NotificationProvider>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/support" element={<CustomerSupportPage />} />
 
-            {/* Protected: Admin Only */}
-            <Route
-              path="/admin-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin-tickets"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminTicketsPage />
-                </ProtectedRoute>
-              }
-            />
+                {/* Protected: Admin Only */}
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin-tickets"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminTicketsPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-            {/* Protected: User Only */}
-            <Route
-              path="/user-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['user']}>
-                  <UserDashboard />
-                </ProtectedRoute>
-              }
-            />
+                {/* Protected: User Only */}
+                <Route
+                  path="/user-dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['user']}>
+                      <UserDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-            {/* Protected: Professional Only */}
-            <Route
-              path="/professional-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['professional']}>
-                  <ProfessionalDashboard />
-                </ProtectedRoute>
-              }
-            />
+                {/* Protected: User Tickets */}
+                <Route
+                  path="/my-tickets"
+                  element={
+                    <ProtectedRoute allowedRoles={['user']}>
+                      <MyTicketsPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-            {/* Protected: Customer Support Only */}
-            <Route
-              path="/support-dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['customer_support']}>
-                  <SupportDashboard />
-                </ProtectedRoute>
-              }
-            />
+                {/* Protected: Professional Only */}
+                <Route
+                  path="/professional-dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['professional']}>
+                      <ProfessionalDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-            {/* Protected: Chat (User & Professional) */}
-            <Route
-              path="/chat"
-              element={
-                <ProtectedRoute allowedRoles={['user', 'professional']}>
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+                {/* Protected: Customer Support Only */}
+                <Route
+                  path="/support-dashboard"
+                  element={
+                    <ProtectedRoute allowedRoles={['customer_support']}>
+                      <SupportDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/support/tickets"
+                  element={
+                    <ProtectedRoute allowedRoles={['customer_support']}>
+                      <SupportTickets />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/support/respond"
+                  element={
+                    <ProtectedRoute allowedRoles={['customer_support']}>
+                      <SupportRespond />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Protected: Chat (User & Professional) */}
+                <Route
+                  path="/chat"
+                  element={
+                    <ProtectedRoute allowedRoles={['user', 'professional']}>
+                      <ChatPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </NotificationProvider>
+          </TicketProvider>
         </BookingProvider>
       </AuthProvider>
     </BrowserRouter>

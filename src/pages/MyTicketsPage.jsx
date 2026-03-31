@@ -1,66 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTickets } from '../context/TicketContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-
-const dummyTickets = [
-    {
-        id: 'TKT-1001', subject: 'Payment not reflected after booking', issueType: 'Payment', status: 'Open',
-        description: 'I completed a payment for AC Service but the transaction is not showing in my booking history. The amount was debited from my account.',
-        createdAt: 'Mar 28, 2026', updatedAt: 'Mar 28, 2026',
-        replies: [
-            { id: 1, sender: 'user', name: 'You', text: 'I completed a payment for AC Service but the transaction is not showing in my booking history. The amount was debited from my account.', time: '10:30 AM' },
-        ],
-    },
-    {
-        id: 'TKT-1002', subject: 'Service provider didn\'t show up', issueType: 'Service Issue', status: 'In Progress',
-        description: 'I booked a home cleaning service for Mar 25 but the provider never arrived. I waited for over 2 hours. Need a refund or reschedule.',
-        createdAt: 'Mar 25, 2026', updatedAt: 'Mar 27, 2026',
-        replies: [
-            { id: 1, sender: 'user', name: 'You', text: 'I booked a home cleaning service for Mar 25 but the provider never arrived. I waited for over 2 hours.', time: '9:15 AM' },
-            { id: 2, sender: 'admin', name: 'Support Team', avatar: 'ST', text: 'Hi! We sincerely apologize for the inconvenience. We are looking into this with the service provider.', time: '11:00 AM' },
-            { id: 3, sender: 'user', name: 'You', text: 'Please process a refund or reschedule ASAP.', time: '11:30 AM' },
-            { id: 4, sender: 'admin', name: 'Support Team', avatar: 'ST', text: 'We have initiated a full refund. You should receive it within 3-5 business days. We have also flagged the provider.', time: '2:00 PM' },
-        ],
-    },
-    {
-        id: 'TKT-1003', subject: 'Unable to update phone number', issueType: 'Account', status: 'Resolved',
-        description: 'I was unable to change my phone number from the profile settings page. The save button was unresponsive.',
-        createdAt: 'Mar 20, 2026', updatedAt: 'Mar 22, 2026',
-        replies: [
-            { id: 1, sender: 'user', name: 'You', text: 'I was unable to change my phone number from the profile settings. The save button doesn\'t work.', time: '3:00 PM' },
-            { id: 2, sender: 'admin', name: 'Support Team', avatar: 'ST', text: 'Thanks for reporting! We\'ve identified the bug and pushed a fix. Please try again now.', time: '5:30 PM' },
-            { id: 3, sender: 'user', name: 'You', text: 'It works now! Thank you so much.', time: '6:00 PM' },
-        ],
-    },
-    {
-        id: 'TKT-1004', subject: 'Incorrect pricing on plumbing service', issueType: 'Payment', status: 'Open',
-        description: 'The listed price for Plumbing Solutions says ₹299 but I was charged ₹599 at checkout. Please investigate.',
-        createdAt: 'Mar 27, 2026', updatedAt: 'Mar 27, 2026',
-        replies: [
-            { id: 1, sender: 'user', name: 'You', text: 'The listed price says ₹299 but I was charged ₹599 at checkout. This is unfair pricing!', time: '1:45 PM' },
-        ],
-    },
-    {
-        id: 'TKT-1005', subject: 'App crash during booking', issueType: 'Other', status: 'Resolved',
-        description: 'The application crashed when I tried to select a time slot for the electrician service. Happened twice on Chrome.',
-        createdAt: 'Mar 18, 2026', updatedAt: 'Mar 21, 2026',
-        replies: [
-            { id: 1, sender: 'user', name: 'You', text: 'App crashes when I select a time slot for the electrician service. Happened twice on Chrome.', time: '10:00 AM' },
-            { id: 2, sender: 'admin', name: 'Support Team', avatar: 'ST', text: 'Could you share your Chrome version and a screenshot if possible?', time: '11:15 AM' },
-            { id: 3, sender: 'user', name: 'You', text: 'Chrome Version 123.0. It happens specifically on the March 20 time slot.', time: '11:30 AM' },
-            { id: 4, sender: 'admin', name: 'Support Team', avatar: 'ST', text: 'We\'ve found and fixed the issue — it was a date parsing bug. The fix is now live!', time: '4:00 PM' },
-        ],
-    },
-    {
-        id: 'TKT-1006', subject: 'Refund not received for cancelled service', issueType: 'Payment', status: 'In Progress',
-        description: 'I cancelled my booking 24 hours in advance but haven\'t received the refund yet. It\'s been 5 days.',
-        createdAt: 'Mar 22, 2026', updatedAt: 'Mar 26, 2026',
-        replies: [
-            { id: 1, sender: 'user', name: 'You', text: 'I cancelled my booking 24 hours in advance. It\'s been 5 days and I still haven\'t received the refund.', time: '9:00 AM' },
-            { id: 2, sender: 'admin', name: 'Support Team', avatar: 'ST', text: 'Hi! We\'re checking with our payments team. Refunds usually take 5-7 business days. We\'ll expedite this for you.', time: '10:30 AM' },
-        ],
-    },
-];
 
 const statusConfig = {
     'Open':        { bg: 'bg-red-100',    text: 'text-red-700',    dot: 'bg-red-500' },
@@ -69,18 +12,24 @@ const statusConfig = {
 };
 
 const issueIcons = {
-    Payment: '💳',
+    'Payment Issue': '💳',
     'Service Issue': '🔧',
-    Account: '👤',
+    'Account Issue': '👤',
     Other: '❓',
 };
 
 const MyTicketsPage = () => {
-    const [tickets, setTickets] = useState(dummyTickets);
+    const { user } = useAuth();
+    const { tickets: allTickets, replyToTicket } = useTickets();
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [filterStatus, setFilterStatus] = useState('All');
     const [replyText, setReplyText] = useState('');
     const messagesEndRef = useRef(null);
+
+    // Show user's own tickets (or all if not logged in)
+    const tickets = user
+        ? allTickets.filter((t) => t.userEmail === user.email || t.userName === user.name)
+        : allTickets;
 
     const filteredTickets = filterStatus === 'All'
         ? tickets
@@ -95,30 +44,25 @@ const MyTicketsPage = () => {
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [selectedTicket?.replies?.length]);
+    }, [selectedTicket?.messages?.length]);
 
     const handleSendReply = () => {
         const trimmed = replyText.trim();
         if (!trimmed || !selectedTicket) return;
-
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        const newReply = {
-            id: Date.now(),
-            sender: 'user',
-            name: 'You',
-            text: trimmed,
-            time: timeStr,
-        };
-
-        setTickets((prev) =>
-            prev.map((t) =>
-                t.id === selectedTicket.id
-                    ? { ...t, replies: [...t.replies, newReply], updatedAt: now.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' }) }
-                    : t
-            )
-        );
-        setSelectedTicket((prev) => ({ ...prev, replies: [...prev.replies, newReply] }));
+        replyToTicket(selectedTicket.id, trimmed, 'user', user?.name || 'You');
+        // Refresh selected ticket view
+        setSelectedTicket((prev) => ({
+            ...prev,
+            messages: [
+                ...prev.messages,
+                {
+                    from: 'user',
+                    name: user?.name || 'You',
+                    text: trimmed,
+                    time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                },
+            ],
+        }));
         setReplyText('');
     };
 
@@ -144,6 +88,15 @@ const MyTicketsPage = () => {
                         <p className="text-gray-500 mt-2 text-sm max-w-md mx-auto">
                             Track and manage all your support tickets in one place.
                         </p>
+                        <Link
+                            to="/support"
+                            className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-dark text-white text-sm font-semibold rounded-xl shadow-md shadow-primary/25 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 no-underline"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Raise New Ticket
+                        </Link>
                     </div>
 
                     {/* Stats Row */}
@@ -184,11 +137,15 @@ const MyTicketsPage = () => {
                             <div className="p-12 text-center">
                                 <p className="text-4xl mb-3">🎉</p>
                                 <p className="text-gray-500 font-medium text-sm">No tickets found for this filter.</p>
+                                <Link to="/support" className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-primary hover:text-primary-dark transition-colors no-underline">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                                    Raise a new ticket
+                                </Link>
                             </div>
                         ) : (
                             <div className="divide-y divide-gray-100">
                                 {filteredTickets.map((ticket) => {
-                                    const sc = statusConfig[ticket.status];
+                                    const sc = statusConfig[ticket.status] || statusConfig['Open'];
                                     return (
                                         <button
                                             key={ticket.id}
@@ -198,11 +155,11 @@ const MyTicketsPage = () => {
                                             <div className="flex items-center gap-4">
                                                 {/* Issue Icon */}
                                                 <span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg
-                                                    ${ticket.issueType === 'Payment' ? 'bg-emerald-100' :
+                                                    ${ticket.issueType === 'Payment Issue' ? 'bg-emerald-100' :
                                                       ticket.issueType === 'Service Issue' ? 'bg-orange-100' :
-                                                      ticket.issueType === 'Account' ? 'bg-blue-100' : 'bg-purple-100'}`}
+                                                      ticket.issueType === 'Account Issue' ? 'bg-blue-100' : 'bg-purple-100'}`}
                                                 >
-                                                    {issueIcons[ticket.issueType]}
+                                                    {issueIcons[ticket.issueType] || '❓'}
                                                 </span>
 
                                                 {/* Content */}
@@ -213,7 +170,7 @@ const MyTicketsPage = () => {
                                                             <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
                                                             {ticket.status}
                                                         </span>
-                                                        <span className="text-xs text-gray-400">💬 {ticket.replies.length}</span>
+                                                        <span className="text-xs text-gray-400">💬 {ticket.messages?.length || 0}</span>
                                                     </div>
                                                     <h4 className="font-semibold text-gray-900 text-sm truncate group-hover:text-primary transition-colors">
                                                         {ticket.subject}
@@ -232,7 +189,6 @@ const MyTicketsPage = () => {
                                             {/* Expanded Conversation Thread */}
                                             {selectedTicket?.id === ticket.id && (
                                                 <div className="mt-4 ml-14 text-left" onClick={(e) => e.stopPropagation()}>
-                                                    {/* Conversation */}
                                                     <div className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
                                                         {/* Thread Header */}
                                                         <div className="px-4 py-2.5 bg-gray-100/80 border-b border-gray-200/60">
@@ -241,18 +197,15 @@ const MyTicketsPage = () => {
 
                                                         {/* Messages */}
                                                         <div className="p-4 space-y-3 max-h-[350px] overflow-y-auto">
-                                                            {selectedTicket.replies.map((msg) => {
-                                                                const isUser = msg.sender === 'user';
+                                                            {selectedTicket.messages.map((msg, i) => {
+                                                                const isUser = msg.from === 'user';
                                                                 return (
-                                                                    <div key={msg.id} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
-                                                                        {/* Avatar */}
+                                                                    <div key={i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : ''}`}>
                                                                         {!isUser && (
                                                                             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0 mb-1">
-                                                                                {msg.avatar}
+                                                                                ST
                                                                             </div>
                                                                         )}
-
-                                                                        {/* Bubble */}
                                                                         <div className={`max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
                                                                             <p className={`text-[10px] font-semibold mb-0.5 px-1 ${isUser ? 'text-right text-primary' : 'text-left text-amber-600'}`}>
                                                                                 {msg.name}

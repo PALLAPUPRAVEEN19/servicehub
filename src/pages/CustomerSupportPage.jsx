@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
+import { useTickets } from '../context/TicketContext';
+import { useNotifications } from '../context/NotificationContext';
 
 const issueTypes = ['Payment Issue', 'Service Issue', 'Account Issue', 'Other'];
 const paymentMethods = ['UPI', 'Card', 'Net Banking'];
 
 const CustomerSupportPage = () => {
+    const { user } = useAuth();
+    const { tickets: allTickets, addTicket } = useTickets();
+    const { addNotification } = useNotifications();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const bookingData = location.state?.booking;
     const [form, setForm] = useState({
         subject: '',
         description: '',
@@ -15,9 +25,23 @@ const CustomerSupportPage = () => {
         amount: '',
         dateOfPayment: '',
     });
-    const [tickets, setTickets] = useState([]);
     const [submitted, setSubmitted] = useState(false);
     const [errors, setErrors] = useState({});
+
+    // Pre-fill form when navigated from a booking
+    useEffect(() => {
+        if (bookingData) {
+            setForm((prev) => ({
+                ...prev,
+                subject: `Issue with ${bookingData.service} (Booking #${bookingData.id})`,
+                description: `I have an issue with my booking for ${bookingData.service} by ${bookingData.provider} on ${bookingData.date}. Booking ID: ${bookingData.id}, Amount: ${bookingData.price}.`,
+                issueType: 'Service Issue',
+            }));
+        }
+    }, [bookingData]);
+
+    // Show only the current user's tickets (or all if not logged in)
+    const tickets = user ? allTickets.filter((t) => t.userEmail === user.email || t.userName === user.name) : allTickets;
 
     const isPaymentIssue = form.issueType === 'Payment Issue';
 
@@ -60,14 +84,12 @@ const CustomerSupportPage = () => {
         if (!validate()) return;
 
         const ticketData = {
-            id: Date.now(),
             subject: form.subject,
             description: form.description,
             issueType: form.issueType,
-            status: 'Open',
-            createdAt: new Date().toLocaleDateString('en-IN', {
-                year: 'numeric', month: 'short', day: 'numeric',
-            }),
+            userId: user?.id || 'guest',
+            userName: user?.name || 'Guest User',
+            userEmail: user?.email || 'guest@example.com',
         };
 
         if (isPaymentIssue) {
@@ -77,7 +99,12 @@ const CustomerSupportPage = () => {
             ticketData.dateOfPayment = form.dateOfPayment;
         }
 
-        setTickets([ticketData, ...tickets]);
+        addTicket(ticketData);
+        addNotification('customer_support', {
+            icon: '🎫',
+            title: 'New ticket raised',
+            description: `${ticketData.issueType} ticket from ${ticketData.userName}`,
+        });
         setForm({
             subject: '',
             description: '',
@@ -89,7 +116,10 @@ const CustomerSupportPage = () => {
         });
         setErrors({});
         setSubmitted(true);
-        setTimeout(() => setSubmitted(false), 4000);
+        setTimeout(() => {
+            setSubmitted(false);
+            navigate('/my-tickets');
+        }, 1500);
     };
 
     const inputClass = (field) =>

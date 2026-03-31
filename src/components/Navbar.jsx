@@ -1,26 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const dummyNotifications = [
-    { id: 1, icon: '📋', title: 'New booking received', description: 'Amit Sharma booked AC Service & Repair', time: '2 min ago', read: false },
-    { id: 2, icon: '✅', title: 'Service approved', description: 'Your "AC Deep Cleaning" service has been approved', time: '15 min ago', read: false },
-    { id: 3, icon: '⭐', title: 'New review received', description: 'Priya Singh rated you 4.9 stars', time: '1 hour ago', read: false },
-    { id: 4, icon: '💰', title: 'Payment received', description: '₹599 credited for AC Repair job', time: '2 hours ago', read: true },
-    { id: 5, icon: '📅', title: 'Upcoming booking reminder', description: 'Home Cleaning scheduled for tomorrow 10 AM', time: '3 hours ago', read: true },
-    { id: 6, icon: '🔔', title: 'Welcome to MyServiceHub!', description: 'Complete your profile to get started', time: '1 day ago', read: true },
-];
+import { useNotifications } from '../context/NotificationContext';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
-    const [notifications, setNotifications] = useState(dummyNotifications);
     const notifRef = useRef(null);
     const location = useLocation();
     const navigate = useNavigate();
     const { user, isAuthenticated, logout, getDashboardPath } = useAuth();
+    const { getNotifications, markAsRead: ctxMarkAsRead, markAllAsRead: ctxMarkAllAsRead, getUnreadCount } = useNotifications();
 
-    const unreadCount = notifications.filter((n) => !n.read).length;
+    const notifications = isAuthenticated ? getNotifications(user?.role) : [];
+    const unreadCount = isAuthenticated ? getUnreadCount(user?.role) : 0;
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -40,11 +33,11 @@ const Navbar = () => {
     };
 
     const markAsRead = (id) => {
-        setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+        if (user?.role) ctxMarkAsRead(user.role, id);
     };
 
     const markAllAsRead = () => {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+        if (user?.role) ctxMarkAllAsRead(user.role);
     };
 
     const getNavLinks = () => {
@@ -70,8 +63,8 @@ const Navbar = () => {
             case 'customer_support':
                 return [
                     { to: '/support-dashboard', label: 'Dashboard' },
-                    { to: '/support-dashboard', label: 'View Tickets' },
-                    { to: '/support-dashboard', label: 'Respond to Users' },
+                    { to: '/support/tickets', label: 'View Tickets' },
+                    { to: '/support/respond', label: 'Respond to Users' },
                 ];
             case 'user':
             default:
@@ -79,7 +72,8 @@ const Navbar = () => {
                     { to: '/', label: 'Home' },
                     { to: '/user-dashboard', label: 'Dashboard' },
                     { to: '/services', label: 'Browse Services' },
-                    { to: '/profile', label: 'My Bookings' },
+                    { to: '/my-tickets', label: 'My Tickets' },
+                    { to: '/support', label: 'Support' },
                 ];
         }
     };

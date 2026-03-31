@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBookings } from '../context/BookingContext';
 import { StatsGrid } from '../components/StatsCard';
+import RatingModal from '../components/RatingModal';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -27,14 +28,17 @@ const recentActivity = [
 const statusConfig = {
     Confirmed: { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' },
     Pending: { bg: 'bg-amber-100', text: 'text-amber-700', dot: 'bg-amber-500' },
+    'In Progress': { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
     Completed: { bg: 'bg-gray-100', text: 'text-gray-600', dot: 'bg-gray-400' },
 };
 
 const UserDashboard = () => {
     const { user } = useAuth();
-    const { bookings: myBookings } = useBookings();
+    const { bookings: myBookings, rateBooking } = useBookings();
     const [searchQuery, setSearchQuery] = useState('');
     const [bookingFilter, setBookingFilter] = useState('All');
+    const [ratingBooking, setRatingBooking] = useState(null);
+    const navigate = useNavigate();
 
     const greeting = () => {
         const hour = new Date().getHours();
@@ -74,15 +78,26 @@ const UserDashboard = () => {
                                     <p className="text-white/60 text-sm mt-0.5">Here's what's happening with your services today</p>
                                 </div>
                             </div>
-                            <Link
-                                to="/services"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary font-semibold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-sm no-underline"
-                            >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                                Browse All Services
-                            </Link>
+                            <div className="flex gap-3">
+                                <Link
+                                    to="/services"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary font-semibold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-sm no-underline"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    Browse Services
+                                </Link>
+                                <Link
+                                    to="/support"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/25 hover:bg-white/25 hover:-translate-y-0.5 transition-all duration-200 text-sm no-underline"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    Report Issue
+                                </Link>
+                            </div>
                         </div>
                     </div>
 
@@ -182,7 +197,7 @@ const UserDashboard = () => {
                                     <p className="text-sm text-gray-400">{myBookings.length} total bookings</p>
                                 </div>
                                 <div className="flex gap-1.5 bg-gray-100 rounded-xl p-1">
-                                    {['All', 'Pending', 'Confirmed', 'Completed'].map((filter) => (
+                                {['All', 'Pending', 'In Progress', 'Completed'].map((filter) => (
                                         <button
                                             key={filter}
                                             onClick={() => setBookingFilter(filter)}
@@ -226,6 +241,28 @@ const UserDashboard = () => {
                                                         <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></span>
                                                         {booking.status}
                                                     </span>
+                                                    {booking.status === 'Completed' && !booking.rating && (
+                                                        <button
+                                                            onClick={() => setRatingBooking(booking)}
+                                                            className="mt-1 px-2.5 py-1 text-[10px] font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors cursor-pointer"
+                                                        >
+                                                            ⭐ Rate & Review
+                                                        </button>
+                                                    )}
+                                                    {booking.rating && (
+                                                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600">
+                                                            <svg className="w-3 h-3 text-amber-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                                                            {booking.rating}
+                                                        </span>
+                                                    )}
+                                                    {booking.status === 'Completed' && (
+                                                        <button
+                                                            onClick={() => navigate('/support', { state: { booking } })}
+                                                            className="mt-1 px-2.5 py-1 text-[10px] font-semibold text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors cursor-pointer"
+                                                        >
+                                                            🚨 Report Issue
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -263,6 +300,14 @@ const UserDashboard = () => {
                 </div>
             </div>
             <Footer />
+
+            {/* Rating Modal */}
+            <RatingModal
+                booking={ratingBooking}
+                isOpen={!!ratingBooking}
+                onClose={() => setRatingBooking(null)}
+                onSubmit={rateBooking}
+            />
         </div>
     );
 };
